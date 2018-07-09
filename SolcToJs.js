@@ -1,10 +1,10 @@
 const { exec } = require('child_process');
 var fs = require('fs')
 var util = require('util')
+var path = require('path')
 
 const fileName = process.argv[2];
-const objName = fileName.split('.sol')[0];
-
+const objName = path.basename(fileName).split('.sol')[0];
 
 const child = exec('solc  --combined-json abi,bin ' + fileName, [], (error, stdout, stderr) => {
   if (error) throw new Error(error);
