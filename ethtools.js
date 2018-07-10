@@ -6,10 +6,12 @@ const commander = require('commander')
 const fs = require('fs')
 const util = require('util')
 const path = require('path')
+const Web3 = require('web3');
 
 commander
   .version('0.1.0', '-v, --version')
 
+commander
   .command('soltojs <inputFile> [outputfile]')
   .action((paramInputFile, paramOutputFile) => {
     var absInputFile = path.resolve(paramInputFile);
@@ -21,9 +23,43 @@ commander
       }
       fs.writeFileSync(outputFile, 'module.exports = ' + util.inspect(contractData, false, 99999) , 'utf-8');
     });
-  });
+  })
 
-commander.parse(process.argv);
+commander
+  .command('deploy <inputFile> <ethnode> <chainid> <privatekey> [gas]')
+  .action((paramInputFile, paramEthNode, paramChainId, paramPrivateKey, paramGas=4700000) => {
+    var absInputFile = path.resolve(paramInputFile)
+
+    solc(absInputFile).then(async (contractData) => {
+      const web3 = new Web3(paramEthNode)
+      const contract = new web3.eth.Contract(contractData.abi, null, null)
+      const deploy = contract.deploy({data: contractData.bin})
+  
+      const trx = {
+        chainId: paramChainId,
+        gas: paramGas,
+        data: deploy._deployData
+      };
+
+      var privateKey = paramPrivateKey
+      const abspathPrivateKey = path.resolve(paramPrivateKey)
+      if (fs.existsSync(abspathPrivateKey)) {
+        privateKey = fs.readFileSync(abspathPrivateKey).toString('utf8')
+      }
+
+      const receipt = await web3.eth.accounts.signTransaction(trx, privateKey)
+      .then((sgnTrx) => {
+        return web3.eth.sendSignedTransaction(sgnTrx.rawTransaction)
+      })
+
+      console.log(receipt)
+
+      process.exit()
+    })
+  })
+
+commander.parse(process.argv)
+
 
 function solc(inputFile, outputTypes = ['abi', 'bin'], pathToCompiler = 'solc') {
   return new Promise((resolve, reject) => {
