@@ -22,7 +22,10 @@ commander
         outputFile = paramOutputFile;
       }
       fs.writeFileSync(outputFile, 'module.exports = ' + util.inspect(contractData, false, 99999) , 'utf-8');
-    });
+    }).catch((error) => {
+      console.log();
+      console.log(error)
+    })
   })
 
 commander
@@ -55,6 +58,9 @@ commander
       console.log(receipt)
 
       process.exit()
+    }).catch((error) => {
+      console.log();
+      console.log(error)
     })
   })
 
@@ -64,8 +70,8 @@ commander.parse(process.argv)
 function solc(inputFile, outputTypes = ['abi', 'bin'], pathToCompiler = 'solc') {
   return new Promise((resolve, reject) => {
     exec(pathToCompiler + ' --combined-json ' + outputTypes.join(',') +' ' + inputFile,[], (error, stdout, stderr) => {
-      if (error) reject(error)
-      if (stderr) reject(stderr);
+      if (error) return reject(error)
+      if (stderr) return reject(stderr)
 
       const compilerOutput = JSON.parse(stdout)
       const targetObjectName = path.basename(inputFile).split('.sol')[0]
